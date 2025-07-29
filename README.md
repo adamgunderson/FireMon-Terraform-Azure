@@ -56,15 +56,6 @@ Adjust the `disk_size_gb` in the Terraform configuration based on your deploymen
 - **Data Collector only**: 500 GB minimum
 - **Database server (distributed)**: 1500-2400 GB depending on device count
 
-## VM Size Recommendations
-
-Based on your environment size, consider these VM sizes:
-
-- **Small (up to 50 devices)**: `Standard_D2s_v3` (2 vCPUs, 8 GB RAM)
-- **Medium (50-200 devices)**: `Standard_D4s_v3` (4 vCPUs, 16 GB RAM)
-- **Large (200-500 devices)**: `Standard_D8s_v3` (8 vCPUs, 32 GB RAM)
-- **Enterprise (500+ devices)**: `Standard_D16s_v3` or larger
-
 ## Security Considerations
 
 1. **Network Access**: 

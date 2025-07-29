@@ -40,7 +40,7 @@ vnet_address_space    = ["10.100.0.0/16"]
 subnet_address_prefix = "10.100.1.0/24"
 
 # Admin username (avoid common usernames for security)
-admin_username = "fmadmin"
+admin_username = "fmosadmin"
 
 # Tags for resource organization (customize as needed)
 tags = {

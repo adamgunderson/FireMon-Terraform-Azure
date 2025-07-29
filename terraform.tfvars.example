@@ -1,0 +1,54 @@
+# terraform.tfvars.example
+# Copy this file to terraform.tfvars and update with your values
+
+# REQUIRED: Set a strong admin password
+admin_password = "YourSecureP@ssw0rd123!"
+
+# IMPORTANT: Update with your actual IP addresses for security
+# To find your public IP: curl ifconfig.me
+allowed_source_ips = [
+  "YOUR_PUBLIC_IP/32",      # Replace with your office/home IP
+  "10.0.0.0/8"              # Example: Internal corporate network
+]
+
+# Azure region - choose one close to your location
+# Run 'az account list-locations -o table' to see all options
+location = "East US"
+
+# Resource naming - adjust to match your naming convention
+resource_group_name = "rg-firemon-prod"
+vm_name            = "vm-firemon-prod-001"
+
+# VM sizing based on your environment
+# All-in-One Configuration (25 devices or less)
+# vm_size = "Standard_E32s_v3"  # 32 vCPUs, 256 GB RAM
+# os_disk_size_gb = 1500
+
+# Standard Configuration - AS/DB (50 devices or less) - Default
+vm_size = "Standard_E16s_v3"  # 16 vCPUs, 128 GB RAM
+os_disk_size_gb = 1000        # 1TB for AS/DB configuration
+
+# Standard Configuration - AS/DB (51-150 devices)
+# vm_size = "Standard_E32s_v3"  # 32 vCPUs, 256 GB RAM
+# os_disk_size_gb = 1000
+
+# Enterprise environment (151-500+ devices)
+# vm_size = "Standard_E32s_v3"  # 32 vCPUs, 256 GB RAM
+# os_disk_size_gb = 1500  # Increase to 2400 for 500+ devices DB server
+
+# Network configuration
+vnet_address_space    = ["10.100.0.0/16"]
+subnet_address_prefix = "10.100.1.0/24"
+
+# Admin username (avoid common usernames for security)
+admin_username = "fmadmin"
+
+# Tags for resource organization (customize as needed)
+tags = {
+  Environment  = "Production"
+  Department   = "Security"
+  CostCenter   = "IT-Security"
+  ManagedBy    = "Terraform"
+  Application  = "FireMon"
+  Owner        = "security-team@company.com"
+}

@@ -1,10 +1,16 @@
+# terraform.tfvars.example
 # Copy this file to terraform.tfvars and update with your values
 
 # REQUIRED: Set a strong admin password
 admin_password = "YourSecureP@ssw0rd123!"
 
+# Public IP deployment (set to true only if external access is needed)
+# For enterprise deployments, keep this false and use Azure Bastion or VPN
+deploy_public_ip = false
+
 # IMPORTANT: Update with your actual IP addresses for security
-# To find your public IP: curl ifconfig.me
+# These IPs are allowed through the Network Security Group
+# Only relevant if deploy_public_ip = true
 allowed_source_ips = [
   "YOUR_PUBLIC_IP/32",      # Replace with your office/home IP
   "10.0.0.0/8"              # Example: Internal corporate network
@@ -18,22 +24,28 @@ location = "East US"
 resource_group_name = "rg-firemon-prod"
 vm_name            = "vm-firemon-prod-001"
 
-# VM sizing based on your environment
+# VM sizing and storage configuration based on your environment
+# NOTE: OS disk uses the default size from FireMon Azure Marketplace image
+
 # All-in-One Configuration (25 devices or less)
 # vm_size = "Standard_E32s_v3"  # 32 vCPUs, 256 GB RAM
-# os_disk_size_gb = 1500
+# data_disk_size_gb = 500         # 500GB for small environments
 
 # Standard Configuration - AS/DB (50 devices or less) - Default
-vm_size = "Standard_E16s_v3"  # 16 vCPUs, 128 GB RAM
-os_disk_size_gb = 1000        # 1TB for AS/DB configuration
+vm_size = "Standard_E16s_v3"     # 16 vCPUs, 128 GB RAM
+data_disk_size_gb = 1200          # 1200GB for standard deployments
 
 # Standard Configuration - AS/DB (51-150 devices)
-# vm_size = "Standard_E32s_v3"  # 32 vCPUs, 256 GB RAM
-# os_disk_size_gb = 1000
+# vm_size = "Standard_E32s_v3"   # 32 vCPUs, 256 GB RAM
+# data_disk_size_gb = 1500        # 1500GB for medium environments
 
-# Enterprise environment (151-500+ devices)
-# vm_size = "Standard_E32s_v3"  # 32 vCPUs, 256 GB RAM
-# os_disk_size_gb = 1500  # Increase to 2400 for 500+ devices DB server
+# Enterprise environment (151-500 devices)
+# vm_size = "Standard_E32s_v3"   # 32 vCPUs, 256 GB RAM
+# data_disk_size_gb = 2000        # 2000GB for large environments
+
+# Enterprise environment (500+ devices)
+# vm_size = "Standard_E32s_v3"   # 32 vCPUs, 256 GB RAM
+# data_disk_size_gb = 2400        # 2400GB for very large environments
 
 # Network configuration
 vnet_address_space    = ["10.100.0.0/16"]

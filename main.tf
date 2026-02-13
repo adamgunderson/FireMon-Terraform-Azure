@@ -282,28 +282,6 @@ resource "azurerm_linux_virtual_machine" "firemon" {
     product   = "firemon_sip_azure" # Product ID from marketplace
   }
 
-  # Cloud-init bootcmd to wait for the data disk before FMOS initialization.
-  # azurerm_linux_virtual_machine does not support inline data disk blocks, so the
-  # disk is attached via azurerm_virtual_machine_data_disk_attachment after VM
-  # creation. This bootcmd pauses early boot until the LUN 0 device appears,
-  # ensuring FireMon's first-boot auto-detection sees the data disk.
-  # Ref: https://github.com/hashicorp/terraform-provider-azurerm/issues/6117
-  custom_data = base64encode(join("\n", [
-    "#cloud-config",
-    "bootcmd:",
-    "  - |",
-    "    count=0",
-    "    while [ ! -e /dev/disk/azure/scsi1/lun0 ]; do",
-    "      sleep 5",
-    "      count=$((count + 1))",
-    "      if [ $count -ge 60 ]; then",
-    "        echo 'Timeout waiting for data disk at LUN 0 after 300s' | logger -t cloud-init-disk-wait",
-    "        break",
-    "      fi",
-    "    done",
-    "    echo 'Data disk detected at LUN 0' | logger -t cloud-init-disk-wait",
-  ]))
-
   # Enable boot diagnostics
   boot_diagnostics {
     storage_account_uri = null  # Uses managed storage account
@@ -334,13 +312,46 @@ resource "azurerm_managed_disk" "firemon_data" {
   }
 }
 
-# Attach data disk to VM (if created)
+# ================================================================================
+# DATA DISK ATTACH WORKFLOW
+# azurerm_linux_virtual_machine does not support inline data disk blocks, so the
+# VM auto-starts without the disk. We immediately deallocate it, attach the disk
+# while stopped, then start it — so FMOS first-boot sees the data disk.
+# Ref: https://github.com/hashicorp/terraform-provider-azurerm/issues/6117
+# ================================================================================
+
+# Step 1: Deallocate the VM immediately after creation
+resource "null_resource" "deallocate_vm" {
+  triggers = {
+    vm_id = azurerm_linux_virtual_machine.firemon.id
+  }
+
+  provisioner "local-exec" {
+    command = "az vm deallocate --resource-group ${azurerm_resource_group.firemon.name} --name ${azurerm_linux_virtual_machine.firemon.name}"
+  }
+}
+
+# Step 2: Attach data disk while VM is deallocated
 resource "azurerm_virtual_machine_data_disk_attachment" "firemon_data" {
   count              = length(azurerm_managed_disk.firemon_data)
   managed_disk_id    = azurerm_managed_disk.firemon_data[count.index].id
   virtual_machine_id = azurerm_linux_virtual_machine.firemon.id
   lun                = 0
   caching            = "ReadWrite"
+
+  depends_on = [null_resource.deallocate_vm]
+}
+
+# Step 3: Start the VM now that the data disk is attached
+resource "null_resource" "start_vm" {
+  triggers = {
+    vm_id              = azurerm_linux_virtual_machine.firemon.id
+    disk_attachment_ids = join(",", azurerm_virtual_machine_data_disk_attachment.firemon_data[*].id)
+  }
+
+  provisioner "local-exec" {
+    command = "az vm start --resource-group ${azurerm_resource_group.firemon.name} --name ${azurerm_linux_virtual_machine.firemon.name}"
+  }
 }
 
 # Outputs

@@ -282,6 +282,28 @@ resource "azurerm_linux_virtual_machine" "firemon" {
     product   = "firemon_sip_azure" # Product ID from marketplace
   }
 
+  # Cloud-init bootcmd to wait for the data disk before FMOS initialization.
+  # azurerm_linux_virtual_machine does not support inline data disk blocks, so the
+  # disk is attached via azurerm_virtual_machine_data_disk_attachment after VM
+  # creation. This bootcmd pauses early boot until the LUN 0 device appears,
+  # ensuring FireMon's first-boot auto-detection sees the data disk.
+  # Ref: https://github.com/hashicorp/terraform-provider-azurerm/issues/6117
+  custom_data = base64encode(join("\n", [
+    "#cloud-config",
+    "bootcmd:",
+    "  - |",
+    "    count=0",
+    "    while [ ! -e /dev/disk/azure/scsi1/lun0 ]; do",
+    "      sleep 5",
+    "      count=$((count + 1))",
+    "      if [ $count -ge 60 ]; then",
+    "        echo 'Timeout waiting for data disk at LUN 0 after 300s' | logger -t cloud-init-disk-wait",
+    "        break",
+    "      fi",
+    "    done",
+    "    echo 'Data disk detected at LUN 0' | logger -t cloud-init-disk-wait",
+  ]))
+
   # Enable boot diagnostics
   boot_diagnostics {
     storage_account_uri = null  # Uses managed storage account
